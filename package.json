@@ -1,0 +1,16 @@
+{
+  "author": "Mikeal Rogers <mikeal.rogers@gmail.com> (http://www.mikealrogers.com)",
+  "name": "replicate",
+  "description": "A customizable CouchDB replicator in node.js.",
+  "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/mikeal/replicate.git"
+  },
+  "main": "main.js",
+  "engines": {
+    "node": "~v0.5.4-pre"
+  },
+  "dependencies": {"request":">= 2.0.5"},
+  "devDependencies": {}
+}
