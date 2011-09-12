@@ -113,7 +113,7 @@ Replicator.prototype.push = function (cb) {
         byid[change.id] = change.changes.map(function (r) {return r.rev})
       })
       r.post({url:options.to + '_missing_revs', json:byid}, function (e, resp, body) {
-        var results = {}
+        var results = []
           , counter = 0
           ;
         body = body.missing_revs
@@ -123,6 +123,7 @@ Replicator.prototype.push = function (cb) {
             body[id].forEach(function (rev) {
               counter++
               options.pushDoc(id, rev, function (obj) {
+                results.push(obj)
                 if (obj.error) options.emit('failed', obj)
                 else options.emit('pushed', obj)
                 counter--
@@ -153,13 +154,13 @@ Replicator.prototype.continuous = function () {
 }
   
 
-function replicate (from, to) {
+function replicate (from, to, cb) {
   if (typeof from === 'object') var options = from
   else {
     var options = {from:from, to:to}
   }
   var rep = new Replicator(options)
-  rep.push()
+  rep.push(cb)
   return rep
 }
 

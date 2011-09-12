@@ -12,5 +12,6 @@
     "node": "~v0.5.4-pre"
   },
   "dependencies": {"request":">= 2.0.5"},
-  "devDependencies": {}
+  "devDependencies": {},
+  "bin" : { "replicate" : "./bin.js" }
 }
