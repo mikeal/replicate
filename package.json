@@ -9,7 +9,7 @@
   },
   "main": "main.js",
   "engines": {
-    "node": ">= 0.5"
+    "node": ">= 0.4"
   },
   "dependencies": {
     "request":">= 2.1.x",
