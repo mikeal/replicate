@@ -9,9 +9,14 @@
   },
   "main": "main.js",
   "engines": {
-    "node": "~v0.5.4-pre"
+    "node": ">= 0.4"
   },
-  "dependencies": {"request":">= 2.0.5"},
+  "dependencies": {
+    "request":">= 2.1.x",
+    "follow":"0.1.x",
+    "formidable": "1.0.x"
+  },
   "devDependencies": {},
   "bin" : { "replicate" : "./bin.js" }
 }
+
