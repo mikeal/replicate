@@ -3,7 +3,7 @@
 ## Install
 
 ``` sh
-[sudo] npm install -g replicate
+[sudo] npm install -g replicate follow request formidable
 ```
 
 ## Usage
