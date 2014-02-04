@@ -4,6 +4,9 @@ var request = require('request')
   , follow = require('follow')
   , formidable = require('formidable')
   , r = request.defaults({json:true})
+  , url = require('url')
+  , http_proxy = process.env.http_proxy
+  , no_proxy_list = process.env.no_proxy ? process.env.no_proxy.split(',') : []
   ;
   
 function requests () {
@@ -15,9 +18,9 @@ function requests () {
     
   for (var i=0;i<args.length;i++) {
     (function (i) {
-      r(args[i], function (e, resp, body) {
+      r(proxify({url: args[i]}), function (e, resp, body) {
         if (e) errors[i] = e
-        else if (resp.statusCode !== 200) errors[i] = new Error("status is not 200.")
+        else if (resp.statusCode !== 200) errors[i] = new Error("status is not 200. was " + resp.statusCode)
         results.push([i, body])
         if (results.length === args.length) {
           var fullresults = [errors.length ? errors : null]
@@ -48,8 +51,8 @@ Replicator.prototype.pushDoc = function (id, rev, cb) {
 
   if (!options.mutation) {
     request
-    .get({url: options.from + encodeURIComponent(id) + '?attachments=true&revs=true&rev=' + rev, headers:headers})
-    .pipe(request.put(options.to + encodeURIComponent(id) + '?new_edits=false&rev=' + rev, function (e, resp, b) {
+    .get(proxify({url: options.from + encodeURIComponent(id) + '?attachments=true&revs=true&rev=' + rev, headers:headers}))
+    .pipe(request.put(proxify({url: options.to + encodeURIComponent(id) + '?new_edits=false&rev=' + rev}), function (e, resp, b) {
       if (e) {
         cb({error:e, id:id, rev:rev, body:b}) 
       } else if (resp.statusCode > 199 && resp.statusCode < 300) {
@@ -62,11 +65,11 @@ Replicator.prototype.pushDoc = function (id, rev, cb) {
   } else {
     var form = new formidable.IncomingForm();
     request.get(
-      { uri: options.from + encodeURIComponent(id) + '?attachments=true&revs=true&rev=' + rev
+      proxify({ uri: options.from + encodeURIComponent(id) + '?attachments=true&revs=true&rev=' + rev
       , onResponse: function (e, resp) {
           // form.parse(resp)
         }
-      }, function (e, resp, body) {
+      }), function (e, resp, body) {
         console.log(resp.statusCode)
         console.log(resp.headers)
         // console.error(body)
@@ -103,8 +106,8 @@ Replicator.prototype.push = function (cb) {
     if (err) throw err
     options.fromInfo = fromInfo
     options.toInfo = toInfo
-    
-    r(options.from + '_changes', function (e, resp, body) {
+
+    r(proxify({url: options.from + '_changes'}), function (e, resp, body) {
       if (e) throw e
       if (resp.statusCode !== 200) throw new Error("status is not 200.")
       var byid = {}
@@ -112,7 +115,7 @@ Replicator.prototype.push = function (cb) {
       body.results.forEach(function (change) {
         byid[change.id] = change.changes.map(function (r) {return r.rev})
       })
-      r.post({url:options.to + '_missing_revs', json:byid}, function (e, resp, body) {
+      r.post(proxify({url:options.to + '_missing_revs', json:byid}), function (e, resp, body) {
         var results = []
           , counter = 0
           ;
@@ -133,7 +136,8 @@ Replicator.prototype.push = function (cb) {
             })
           })(id)
         }
-        if (Object.keys(body).length === 0) cb({})
+        console.log(body);
+        if (Object.keys(body).length === 0) cb({});
       })
     })
   })
@@ -162,6 +166,33 @@ function replicate (from, to, cb) {
   var rep = new Replicator(options)
   rep.push(cb)
   return rep
+}
+
+/**
+ * Adds http proxy information to a request if the following env vars are found:
+ * http_proxy
+ * no_proxy
+ *
+ * The no_proxy support is very limited, it does not support wildcards or anything fancy
+ *
+ * @param options {Object}
+ */
+function proxify(options) {
+  var urlToProxify = options.url || options.uri;
+  var host = url.parse(urlToProxify).hostname;
+
+  // If the host is not in the no_proxy then it's eligible
+  var proxyThisHost = no_proxy_list.indexOf(host) === -1;
+
+  if(http_proxy && proxyThisHost) {
+    options.proxy = http_proxy;
+  } else {
+    delete options.proxy;
+  }
+
+  //console.log("urlToProxify:", urlToProxify, "- options:", options);
+
+  return options;
 }
 
 module.exports = replicate
